@@ -18,7 +18,7 @@
 		"build": "bun run build:esm && bun run build:cjs && bun run build:types",
 		"build:esm": "bun build src/index.ts --outdir dist/esm --format esm --target node --minify --sourcemap=external",
 		"build:cjs": "bun build src/index.ts --outdir dist/cjs --format cjs --target node --minify --sourcemap=external --outfile index.js",
-		"build:types": "tsc --project tsconfig.build.json"
+		"build:types": "tsc --project build.tsconfig.json"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.3.14",
