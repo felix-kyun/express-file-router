@@ -5,7 +5,8 @@ import { glob } from "node:fs/promises";
 import { log } from "@/helpers/log";
 import { ensureDirectoryExists } from "@/helpers/ensureDirectoryExists";
 import { CONTROLLER, ROUTES } from "@/constants";
-import type { Constructor, RouteMeta } from "@/types";
+import type { ControllerMeta, RouteMeta } from "@/types/Meta";
+import type { Constructor } from "@/types/Constructor";
 import { normalizeRoute } from "@/helpers/normalizeRoute";
 
 export async function FileRouter(directory: string): Promise<Router> {
@@ -24,17 +25,31 @@ export async function FileRouter(directory: string): Promise<Router> {
 		Object.values(module).forEach((e) => {
 			if (typeof e !== "function") return;
 
-			const controllerRoute = Reflect.getMetadata(CONTROLLER, e);
-			if (controllerRoute === undefined) return;
+			const controllerMeta = Reflect.getMetadata(CONTROLLER, e) as
+				| ControllerMeta
+				| undefined;
+			if (controllerMeta === undefined) return;
 
 			const instance = new (e as Constructor)();
 			const routes = (Reflect.getMetadata(ROUTES, e) ?? []) as RouteMeta[];
-			routes.forEach(({ path, method, name }) => {
-				const fullPath = normalizeRoute(join(baseRoute, controllerRoute, path));
 
-				log(() => `Registering ${method.toUpperCase()} ${fullPath}`);
+			// register
+			routes.forEach(({ path, method, name, middleware }) => {
+				const fullPath = normalizeRoute(
+					join(baseRoute, controllerMeta.path, path),
+				);
 
-				router[method](fullPath, instance[name].bind(instance));
+				log(
+					() =>
+						`Registering ${method.toUpperCase()} ${fullPath} (${controllerMeta.middleware.length + middleware.length} middlewares)`,
+				);
+
+				router[method](
+					fullPath,
+					...controllerMeta.middleware,
+					...middleware,
+					instance[name].bind(instance),
+				);
 			});
 		});
 	}

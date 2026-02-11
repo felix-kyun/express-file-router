@@ -1,8 +1,9 @@
 import "reflect-metadata";
 import { ROUTES } from "@/constants";
-import type { Methods, RouteMeta } from "@/types";
+import type { RouteMeta } from "@/types/Meta";
+import type { HttpMethod } from "@/types/HttpMethod";
 
-export function Method(method: Methods) {
+export function Method(method: HttpMethod) {
 	return function (path: string = "/"): MethodDecorator {
 		return <T>(
 			target: Object,
@@ -11,7 +12,7 @@ export function Method(method: Methods) {
 		): void => {
 			const routes: RouteMeta[] =
 				Reflect.getMetadata(ROUTES, target.constructor) || [];
-			routes.push({ path, method, name: propertyKey });
+			routes.push({ path, method, name: propertyKey, middleware: [] });
 			Reflect.defineMetadata(ROUTES, routes, target.constructor);
 		};
 	};
