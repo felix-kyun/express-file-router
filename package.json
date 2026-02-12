@@ -1,6 +1,6 @@
 {
 	"name": "@felix-kyun/file-router",
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"description": "Minimal File and Decorator based route configurator for express. ",
 	"author": "Felix Kyun",
 	"keywords": [
