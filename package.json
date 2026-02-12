@@ -19,6 +19,7 @@
 			"types": "./dist/index.d.ts"
 		}
 	},
+	"types": "./dist/index.d.ts",
 	"module": "src/index.ts",
 	"type": "module",
 	"scripts": {
