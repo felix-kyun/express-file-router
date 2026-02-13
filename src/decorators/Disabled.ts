@@ -1,7 +1,7 @@
-import { CONTROLLER, ROUTES } from "@/constants";
+import { Meta } from "@/class/Meta";
+import { verbose } from "@/helpers/log";
 import type { Condition } from "@/types/Condition";
 import type { Constructor } from "@/types/Constructor";
-import type { ControllerMeta, RouteMeta } from "@/types/Meta";
 
 export function Disabled(disabled: Condition) {
 	function disabledDecorator(
@@ -18,26 +18,21 @@ export function Disabled(disabled: Condition) {
 		descriptor?: PropertyDescriptor,
 	) {
 		if (propertyKey && descriptor) {
-			const routes: Array<RouteMeta> = Reflect.getMetadata(
-				ROUTES,
-				target.constructor,
-			) as Array<RouteMeta>;
-			if (!routes)
-				throw new Error(`Class ${target} is not decorated with @Controller`);
+			verbose(
+				() =>
+					`disable-route: ${String(propertyKey)} with condition: ${disabled}`,
+			);
 
-			const route = routes.find((r) => r.name === propertyKey);
-			if (route) {
-				route.disabled = disabled;
-			}
+			const route = Meta.get(target.constructor).getRoute(propertyKey);
+			route.disabled = disabled;
 		} else {
-			const controllerMeta = Reflect.getMetadata(
-				CONTROLLER,
-				target,
-			) as ControllerMeta;
-			if (controllerMeta) {
-				controllerMeta.disabled = disabled;
-			} else
-				throw new Error(`Class ${target} is not decorated with @Controller`);
+			verbose(() => {
+				const name = target instanceof Function ? target.name : String(target);
+				return `disable-controller: ${name} with condition: ${disabled}`;
+			});
+
+			const meta = Meta.get(target as Function);
+			meta.disabled = disabled;
 		}
 	}
 

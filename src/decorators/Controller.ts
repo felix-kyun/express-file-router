@@ -1,14 +1,14 @@
 import "reflect-metadata";
-import { CONTROLLER } from "@/constants";
 import type { Constructor } from "@/types/Constructor";
-import type { ControllerMeta } from "@/types/Meta";
+import { Meta } from "@/class/Meta";
+import { verbose } from "@/helpers/log";
 
-export function Controller(path: string = "/") {
+export function Controller(path?: string) {
 	return (target: Constructor): void => {
-		Reflect.defineMetadata(
-			CONTROLLER,
-			{ path, middleware: [], disabled: () => false } satisfies ControllerMeta,
-			target,
+		verbose(
+			() => `register-controller: ${target.name} at path: ${path ?? "/"}`,
 		);
+		const meta = Meta.getOrAttach(target, path);
+		meta.path = path ?? meta.path;
 	};
 }

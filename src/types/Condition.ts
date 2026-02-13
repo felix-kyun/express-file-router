@@ -1,1 +1,1 @@
-export type Condition = () => boolean;
+export type Condition = boolean | (() => boolean);

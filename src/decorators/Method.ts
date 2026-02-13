@@ -1,25 +1,22 @@
 import "reflect-metadata";
-import { ROUTES } from "@/constants";
-import type { RouteMeta } from "@/types/Meta";
 import type { HttpMethod } from "@/types/HttpMethod";
+import { Meta } from "@/class/Meta";
+import { Route } from "@/class/Route";
+import { verbose } from "@/helpers/log";
 
 export function Method(method: HttpMethod) {
-	return function (path: string = "/"): MethodDecorator {
+	return function (path?: string): MethodDecorator {
 		return <T>(
 			target: Object,
 			propertyKey: string | symbol,
 			_descriptor: TypedPropertyDescriptor<T>,
 		): void => {
-			const routes: RouteMeta[] =
-				Reflect.getMetadata(ROUTES, target.constructor) || [];
-			routes.push({
-				path,
-				method,
-				name: propertyKey,
-				middleware: [],
-				disabled: () => false,
-			});
-			Reflect.defineMetadata(ROUTES, routes, target.constructor);
+			verbose(
+				() =>
+					`register-route: ${String(propertyKey)} with method: ${method} at path: ${path ?? "/"}`,
+			);
+			const meta = Meta.getOrAttach(target.constructor);
+			meta.addRoute(new Route(propertyKey, method, path ?? "/"));
 		};
 	};
 }

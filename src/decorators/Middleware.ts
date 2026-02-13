@@ -1,6 +1,6 @@
-import { CONTROLLER, ROUTES } from "@/constants";
+import { Meta } from "@/class/Meta";
+import { verbose } from "@/helpers/log";
 import type { Constructor } from "@/types/Constructor";
-import type { ControllerMeta, RouteMeta } from "@/types/Meta";
 import type { Middleware as IMiddleware } from "@/types/Middleware";
 
 export function Middleware(...middlewares: Array<IMiddleware>) {
@@ -18,29 +18,18 @@ export function Middleware(...middlewares: Array<IMiddleware>) {
 		descriptor?: PropertyDescriptor,
 	) {
 		if (propertyKey && descriptor) {
-			const routes: Array<RouteMeta> = Reflect.getMetadata(
-				ROUTES,
-				target.constructor,
-			) as Array<RouteMeta>;
-			if (!routes)
-				throw new Error(`Class ${target} is not decorated with @Controller`);
+			verbose(() => `add-middlewares: ${propertyKey.toString()}`);
 
-			const route = routes.find((r) => r.name === propertyKey);
-			if (route) {
-				route.middleware.push(...middlewares);
-			} else
-				throw new Error(
-					`Method ${String(propertyKey)} is not decorated with a HTTP method decorator`,
-				);
+			const route = Meta.get(target.constructor).getRoute(propertyKey);
+			route.addMiddlewares(...middlewares);
 		} else {
-			const controllerMeta = Reflect.getMetadata(
-				CONTROLLER,
-				target,
-			) as ControllerMeta;
-			if (controllerMeta) {
-				controllerMeta.middleware.push(...middlewares);
-			} else
-				throw new Error(`Class ${target} is not decorated with @Controller`);
+			verbose(() => {
+				const name = target instanceof Function ? target.name : String(target);
+				return `add-middlewares: ${name}`;
+			});
+
+			const meta = Meta.get(target as Function);
+			meta.addMiddlewares(...middlewares);
 		}
 	}
 

@@ -10,3 +10,14 @@ export const log = (message: string | (() => string)) => {
 		}
 	}
 };
+
+const _verbose = debug("file-router:verbose");
+export const verbose = (message: string | (() => string)) => {
+	if (_verbose.enabled) {
+		if (typeof message === "function") {
+			_verbose(message());
+		} else {
+			_verbose(message);
+		}
+	}
+};

@@ -4,11 +4,10 @@ import { resolve, relative, join, dirname } from "node:path";
 import { glob } from "node:fs/promises";
 import { log } from "@/helpers/log";
 import { ensureDirectoryExists } from "@/helpers/ensureDirectoryExists";
-import { CONTROLLER, ROUTES } from "@/constants";
-import type { ControllerMeta, RouteMeta } from "@/types/Meta";
 import type { Constructor } from "@/types/Constructor";
 import { normalizeRoute } from "@/helpers/normalizeRoute";
 import { fileURLToPath } from "node:url";
+import { Meta } from "./class/Meta";
 
 /*
  * @param directory - relative to runtime directory
@@ -29,50 +28,49 @@ export async function FileRouter(
 	const path = resolve(directory);
 	ensureDirectoryExists(path);
 
-	log(() => `Scanning directory: ${path}`);
+	log(() => `scan: ${relative(process.cwd(), path)}`);
 
 	const files = glob(`${path}/**/*.{ts,js}`);
 	for await (const file of files) {
-		log(() => `Loading ${relative(path, file)}`);
-
+		log(() => `load: ${relative(path, file)}`);
 		const module = await import(file);
 		const baseRoute = join("/", dirname(relative(path, file)));
 
 		Object.values(module).forEach((e) => {
 			if (typeof e !== "function") return;
 
-			const controllerMeta = Reflect.getMetadata(CONTROLLER, e) as
-				| ControllerMeta
-				| undefined;
-			if (controllerMeta === undefined) return;
-			if (controllerMeta.disabled()) {
-				log(() => `Skipping disabled controller: ${e.name}`);
+			log(() => `inspect: ${e.name}`);
+			const controller = Meta.get(e);
+
+			if (controller.isDisabled()) {
+				log(() => `skip: ${e.name}`);
 				return;
 			}
 
 			const instance = new (e as Constructor)();
-			const routes = (Reflect.getMetadata(ROUTES, e) ?? []) as RouteMeta[];
 
 			// register
-			routes.forEach(({ path, method, name, middleware, disabled }) => {
-				if (disabled()) {
-					log(() => `Skipping: ${e.name}.${name.toString()}`);
+			controller.routes.forEach((route) => {
+				log(() => `inspect: ${e.name}.${route.name.toString()}`);
+				if (route.isDisabled()) {
+					log(() => `skip: ${e.name}.${route.name.toString()}`);
 					return;
 				}
-				const fullPath = normalizeRoute(
-					join(baseRoute, controllerMeta.path, path),
+				const path = normalizeRoute(
+					join(baseRoute, controller.path, route.path),
 				);
 
-				log(
-					() =>
-						`Registering ${method.toUpperCase()} ${fullPath} (${controllerMeta.middleware.length + middleware.length} middlewares)`,
-				);
+				log(() => {
+					const count =
+						controller.middlewares.length + route.middlewares.length;
+					return `register: ${route.method.toUpperCase()} ${path} (${count})`;
+				});
 
-				router[method](
-					fullPath,
-					...controllerMeta.middleware,
-					...middleware,
-					instance[name].bind(instance),
+				router[route.method](
+					path,
+					...controller.middlewares,
+					...route.middlewares,
+					instance[route.name].bind(instance),
 				);
 			});
 		});
