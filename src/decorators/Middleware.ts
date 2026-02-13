@@ -1,6 +1,6 @@
 import { CONTROLLER, ROUTES } from "@/constants";
 import type { Constructor } from "@/types/Constructor";
-import type { RouteMeta } from "@/types/Meta";
+import type { ControllerMeta, RouteMeta } from "@/types/Meta";
 import type { Middleware as IMiddleware } from "@/types/Middleware";
 
 export function Middleware(...middlewares: Array<IMiddleware>) {
@@ -21,7 +21,10 @@ export function Middleware(...middlewares: Array<IMiddleware>) {
 			const routes: Array<RouteMeta> = Reflect.getMetadata(
 				ROUTES,
 				target.constructor,
-			);
+			) as Array<RouteMeta>;
+			if (!routes)
+				throw new Error(`Class ${target} is not decorated with @Controller`);
+
 			const route = routes.find((r) => r.name === propertyKey);
 			if (route) {
 				route.middleware.push(...middlewares);
@@ -30,7 +33,10 @@ export function Middleware(...middlewares: Array<IMiddleware>) {
 					`Method ${String(propertyKey)} is not decorated with a HTTP method decorator`,
 				);
 		} else {
-			const controllerMeta = Reflect.getMetadata(CONTROLLER, target);
+			const controllerMeta = Reflect.getMetadata(
+				CONTROLLER,
+				target,
+			) as ControllerMeta;
 			if (controllerMeta) {
 				controllerMeta.middleware.push(...middlewares);
 			} else
